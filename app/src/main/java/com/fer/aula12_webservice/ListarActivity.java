@@ -114,7 +114,11 @@ public class ListarActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(List<Pessoa> pessoas) {
             super.onPostExecute(pessoas);
-            ArrayAdapter adapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_1, listaPessoa);
+            List<String> listaPessoas = new ArrayList<>();
+            for (Pessoa p : pessoas){
+                listaPessoas.add(p.getId()+" - "+p.getNome()+" - "+p.getTelefone());
+            }
+            ArrayAdapter adapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_1, listaPessoas);
             lista.setAdapter(adapter);
         }
     }
