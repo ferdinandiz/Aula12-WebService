@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -11,7 +13,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.fer.aula12_webservice.model.Pessoa;
-import com.fer.aula12_webservice.service.HTTPBuscar;
+import com.google.gson.Gson;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BuscarActivity extends AppCompatActivity {
     Button btnBuscar, btnInserir, btnDeletar, btnListar, btnBuscarInfo;
@@ -31,6 +40,8 @@ public class BuscarActivity extends AppCompatActivity {
         txtID = findViewById(R.id.txtID);
         txtNome = findViewById(R.id.txtNome);
         txtTelefone = findViewById(R.id.txtTelefone);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
         btnInserir.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -60,22 +71,55 @@ public class BuscarActivity extends AppCompatActivity {
         btnBuscarInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+
+
                 if(edID.getText().toString().isEmpty()){
                     Toast.makeText(BuscarActivity.this, "ID não Inserido!!!!!!!!!!!", Toast.LENGTH_SHORT).show();
+                } else {
+
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            StringBuilder resp = new StringBuilder();
+                            try {
+                                URL url = new URL("http://ferdinandizdoom.com/consultar.php?id=" + edID.getText().toString());
+                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                connection.setConnectTimeout(5000);
+                                connection.setRequestMethod("GET");
+                                connection.setRequestProperty("Accept", "application/json");
+                                connection.connect();
+                                Scanner sc = new Scanner(url.openStream());
+                                while (sc.hasNext()) {
+                                    resp.append(sc.next());
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                    Pessoa pessoa = new Gson().fromJson(resp.toString(), Pessoa.class);
+                                    if (!pessoa.getNome().isEmpty()) {
+                                        try {
+                                            txtID.setText(pessoa.getId());
+                                            txtNome.setText(pessoa.getNome());
+                                            txtTelefone.setText(pessoa.getTelefone());
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
                 }
-                else{
-                    HTTPBuscar service = new HTTPBuscar(edID.getText().toString());
-                    try {
-                        Pessoa pessoa = service.execute().get();
-                        txtID.setText(pessoa.getId());
-                        txtNome.setText(pessoa.getNome());
-                        txtTelefone.setText(pessoa.getTelefone());
-                    } catch (Exception e){
-                        e.printStackTrace();
-                    }
-                }
+
+
+
+
             }
         });
-
     }
 }
