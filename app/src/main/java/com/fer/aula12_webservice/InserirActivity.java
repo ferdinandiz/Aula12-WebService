@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.fer.aula12_webservice.service.HTTPInserir;
 
+import java.util.concurrent.ExecutionException;
+
 public class InserirActivity extends AppCompatActivity {
    Button btnBuscar, btnDeletar, btnListar, btnInserir, btnInserirInfo;
    EditText edNome, edTelefone;
@@ -71,7 +73,7 @@ public class InserirActivity extends AppCompatActivity {
                   }else{
                      Toast.makeText(InserirActivity.this, "O Contato não foi Inserido!!", Toast.LENGTH_SHORT).show();
                   }
-               }catch (Exception e){
+               }catch (InterruptedException | ExecutionException e) {
                   e.printStackTrace();
                }
             }

@@ -11,6 +11,8 @@ import android.widget.Toast;
 
 import com.fer.aula12_webservice.service.HTTPDeletar;
 
+import java.util.concurrent.ExecutionException;
+
 public class DeletarActivity extends AppCompatActivity {
     EditText ed_id;
     Button btnDeletarInfo, btnBuscar, btnDeletar, btnListar, btnInserir;
@@ -70,7 +72,7 @@ public class DeletarActivity extends AppCompatActivity {
                         else{
                             Toast.makeText(DeletarActivity.this, "Erro ao deletar contato", Toast.LENGTH_SHORT).show();
                         }
-                    }catch (Exception e){
+                    }catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
                 }
