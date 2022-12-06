@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -25,6 +27,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ListarActivity extends AppCompatActivity {
     Button btnBuscar, btnDeletar, btnListar, btnInserir;
@@ -40,6 +44,9 @@ public class ListarActivity extends AppCompatActivity {
         btnInserir = findViewById(R.id.btnInsere);
         listView = findViewById(R.id.lista);
         btnListar.setEnabled(false);
+        List<String> listaPessoasString = new ArrayList<>();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
         btnBuscar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,69 +72,67 @@ public class ListarActivity extends AppCompatActivity {
             }
         });
 
-        HTTPListar listarJson = new HTTPListar();
-        listarJson.execute();
-    }
 
-    public class HTTPListar extends AsyncTask <String,String,List<String>> {
-        @Override
-        protected List<String> doInBackground(String... strings) {
-            listaPessoa = new ArrayList<>();
-            HttpURLConnection connection = null;
-            BufferedReader buffer = null;
-            try {
-                URL url = new URL("http://ferdinandizdoom.com/listar.php");
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(5000);
-                connection.connect();
-                InputStream inputStream = connection.getInputStream();
-                buffer = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuilder stringBuffer = new StringBuilder();
-                String linha = "";
-                while ((linha = buffer.readLine())!=null){
-                    stringBuffer.append(linha);
-                }
-                String arqJson = stringBuffer.toString();
-                JSONObject objetoPessoa= new JSONObject(arqJson);
-                JSONArray array = objetoPessoa.getJSONArray("pessoa");
-                for(int i =0;i<array.length();i++){
-                    JSONObject objetoArray = array.getJSONObject(i);
-                    Pessoa pessoa = new Pessoa();
-                    pessoa.setId(objetoArray.getString("id"));
-                    pessoa.setNome(objetoArray.getString("nome"));
-                    pessoa.setTelefone(objetoArray.getString("telefone"));
-                    listaPessoa.add(pessoa);
-                }
+        //primeira tentativa
 
-                List<String> listaPessoasString = new ArrayList<>();
-                for (Pessoa p : listaPessoa){
-                    listaPessoasString.add(p.getId()+" - "+p.getNome()+" - "+p.getTelefone());
-                }
-
-                return listaPessoasString;
-
-            } catch (JSONException | IOException e) {
-                e.printStackTrace();
-            } finally {
-
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                listaPessoa = new ArrayList<>();
+                HttpURLConnection connection = null;
+                BufferedReader buffer = null;
                 try {
-                    assert connection != null;
-                    connection.disconnect();
-                    assert buffer != null;
-                    buffer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        }
+                    URL url = new URL("http://ferdinandizdoom.com/listar.php");
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setConnectTimeout(5000);
+                    connection.connect();
+                    InputStream inputStream = connection.getInputStream();
+                    buffer = new BufferedReader(new InputStreamReader(inputStream));
+                    StringBuilder stringBuffer = new StringBuilder();
+                    String linha = "";
+                    while ((linha = buffer.readLine())!=null){
+                        stringBuffer.append(linha);
+                    }
+                    String arqJson = stringBuffer.toString();
+                    JSONObject objetoPessoa= new JSONObject(arqJson);
+                    JSONArray array = objetoPessoa.getJSONArray("pessoa");
+                    for(int i =0;i<array.length();i++){
+                        JSONObject objetoArray = array.getJSONObject(i);
+                        Pessoa pessoa = new Pessoa();
+                        pessoa.setId(objetoArray.getString("id"));
+                        pessoa.setNome(objetoArray.getString("nome"));
+                        pessoa.setTelefone(objetoArray.getString("telefone"));
+                        listaPessoa.add(pessoa);
+                    }
 
-        @Override
-        protected void onPostExecute(List<String> pessoas) {
-            super.onPostExecute(pessoas);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(getApplicationContext(), R.layout.lista_modificada, pessoas);
-            listView.setAdapter(adapter);
-        }
+                    for (Pessoa p : listaPessoa){
+                        listaPessoasString.add(p.getId()+" - "+p.getNome()+" - "+p.getTelefone());
+                    }
+
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                } finally {
+
+                    try {
+                        assert connection != null;
+                        connection.disconnect();
+                        assert buffer != null;
+                        buffer.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getApplicationContext(), R.layout.lista_modificada, listaPessoasString);
+                        listView.setAdapter(adapter);
+                    }
+                });
+
+            }
+        });
+
     }
 
 }
